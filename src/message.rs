@@ -1,9 +1,13 @@
+//! Contains enums for message types and field types
+
+/// Enumerates the three possible data types for message fields
 pub enum FieldType {
     IBInteger,
     IBString,
     IBFloat,
 }
 
+/// These are the possible inbound messages we can receive from the server
 pub enum InboundMessages {
     TickPrice,
     TickSize,
@@ -85,6 +89,7 @@ pub enum InboundMessages {
     ReplaceFaEnd,
 }
 
+/// These are the possible outbound message types we can send to the server
 pub enum OutboundMessages {
     ReqMarketData,
     CancelMarketData,
