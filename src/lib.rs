@@ -1,4 +1,5 @@
-pub mod connectivity;
+pub mod client;
+pub mod socket;
 
 #[cfg(test)]
 mod tests {
