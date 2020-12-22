@@ -1,5 +1,9 @@
 //! Contains enums for message types and field types
 
+use anyhow::*;
+
+use crate::traits::FromBytes;
+
 /// Enumerates the three possible data types for message fields
 pub enum FieldType {
     IBInteger,
@@ -165,4 +169,58 @@ pub enum OutboundMessages {
     ReqTickByTickData,
     CancelTickByTickData,
     ReqCompletedOrders,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Message {
+    fields: Vec<String>,
+    raw: Option<String>,
+}
+
+impl Message {
+    pub fn new() -> Message {
+        Message {
+            fields: vec![],
+            raw: None,
+        }
+    }
+
+    pub fn add_field<S: Into<String>>(&mut self, v: S) {
+        let _v = format!("{}\0", v.into());
+        self.fields.push(_v);
+    }
+}
+
+impl FromBytes for Message {
+    fn from_bytes(b: &[u8]) -> Result<Self> {
+        match b.len() > 4 {
+            true => {
+                let size = &b[0..4];
+                println!("B is: {:?}", b);
+                let text = String::from_utf8(b[4..].into())?;
+
+                let msg = Message {
+                    fields: vec![],
+                    raw: Some(text),
+                };
+                Ok(msg)
+            }
+            false => Err(anyhow!("Not enough bytes in message")),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn create_message_from_bytes() {
+        let _length: u32 = 0x000004;
+        let _length = _length.to_be_bytes();
+        let test_string = String::from("TEST\0");
+        let test_bytes = test_string.as_bytes();
+        let test_bytes = [&_length, test_bytes].concat();
+        let test_message = Message::from_bytes(&test_bytes).unwrap();
+        assert_eq!(test_message.raw.unwrap().as_bytes(), &[84, 69, 83, 84, 0]);
+    }
 }
