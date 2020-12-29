@@ -1,14 +1,16 @@
 //! Contains enums for message types and field types
 
+use std::convert::{Into, From};
 use anyhow::*;
 
 use crate::traits::FromBytes;
 
 /// Enumerates the three possible data types for message fields
-pub enum FieldType {
-    IBInteger,
-    IBString,
-    IBFloat,
+#[derive(Debug, PartialEq)]
+pub enum IBField {
+    IBInteger(u32),
+    IBString(String),
+    IBFloat(f32),
 }
 
 /// These are the possible inbound messages we can receive from the server
@@ -169,11 +171,26 @@ pub enum OutboundMessages {
     ReqTickByTickData,
     CancelTickByTickData,
     ReqCompletedOrders,
+    Invalid,
+}
+
+/// Allows for converting an OutboundMessage to a u32 to be serialized for transmission
+impl Into<u32> for OutboundMessages {
+    fn into(self) -> u32 {
+        match self {
+            OutboundMessages::StartApi => {
+                71
+            },
+            _ => {
+                0
+            }
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Message {
-    fields: Vec<String>,
+    fields: Vec<IBField>,
     raw: Option<String>,
 }
 
@@ -185,9 +202,26 @@ impl Message {
         }
     }
 
-    pub fn add_field<S: Into<String>>(&mut self, v: S) {
-        let _v = format!("{}\0", v.into());
-        self.fields.push(_v);
+    pub fn add_field(&mut self, v: IBField) {
+        self.fields.push(v);
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = vec![];
+        for field in &self.fields {
+            match field {
+                IBField::IBFloat(v) => {
+                    bytes = [bytes, v.to_be_bytes().to_vec()].concat();
+                },
+                IBField::IBInteger(v) => {
+                    bytes = [bytes, v.to_be_bytes().to_vec()].concat();
+                },
+                IBField::IBString(v) => {
+                    bytes = [bytes, v.as_bytes().to_vec()].concat();
+                }
+            }
+        }
+        bytes
     }
 }
 
