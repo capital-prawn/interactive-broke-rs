@@ -50,7 +50,7 @@ impl EClient {
 
     /// Starts the API layer. Negotiates the server version, etc. 
     pub fn start_api(&mut self) -> Result<(), Error> {
-        let mut msg: message::Message = message::Message::new();
+        let mut msg: message::Message = message::Message::new_outbound();
         let f: u32 = message::OutboundMessages::StartApi{}.into();
         msg.add_field(IBField::IBInteger(f));
         msg.add_field(IBField::IBInteger(VERSION));
@@ -92,9 +92,8 @@ impl EClient {
         }
         self.connection_state = ConnectionState::Connecting;
 
-        let connOpts = "";
         let header = V100_PREFIX.as_bytes();
-        let conn_message = format!("v{}..{}{}", MIN_CLIENT_VER, MAX_CLIENT_VER, connOpts).as_bytes().to_vec();
+        let conn_message = format!("v{}..{}", MIN_CLIENT_VER, MAX_CLIENT_VER).as_bytes().to_vec();
         let l = conn_message.len() as u32;
         let l = l.to_be_bytes().to_vec();
 
