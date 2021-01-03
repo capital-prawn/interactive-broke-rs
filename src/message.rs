@@ -1,7 +1,7 @@
 //! Contains enums for message types and field types
 
-use std::convert::{Into};
 use anyhow::*;
+use std::convert::Into;
 
 use crate::traits::FromBytes;
 
@@ -16,7 +16,7 @@ pub enum IBField {
 #[derive(Debug, PartialEq)]
 pub enum Message {
     Inbound(InboundMessage),
-    Outbound(OutboundMessage)
+    Outbound(OutboundMessage),
 }
 
 impl Message {
@@ -32,21 +32,15 @@ impl Message {
         match self {
             Message::Inbound(msg) => {
                 msg.add_field(field);
-            },
-            Message::Outbound(msg) => {
-                msg.add_field(field)
             }
+            Message::Outbound(msg) => msg.add_field(field),
         }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            Message::Inbound(msg) => {
-                msg.to_bytes()
-            },
-            Message::Outbound(msg) => {
-                msg.to_bytes()
-            }
+            Message::Inbound(msg) => msg.to_bytes(),
+            Message::Outbound(msg) => msg.to_bytes(),
         }
     }
 }
@@ -215,42 +209,36 @@ pub enum OutboundMessages {
 impl Into<u32> for OutboundMessages {
     fn into(self) -> u32 {
         match self {
-            OutboundMessages::StartApi => {
-                71
-            },
-            _ => {
-                0
-            }
+            OutboundMessages::StartApi => 71,
+            _ => 0,
         }
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct OutboundMessage {
-    fields: Vec<IBField>
+    fields: Vec<IBField>,
 }
 
 impl OutboundMessage {
     pub fn new() -> OutboundMessage {
-        OutboundMessage {
-            fields: vec![]
-        }
+        OutboundMessage { fields: vec![] }
     }
 
     pub fn add_field(&mut self, v: IBField) {
         self.fields.push(v);
     }
-    
+
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = vec![];
         for field in &self.fields {
             match field {
                 IBField::IBFloat(v) => {
                     bytes = [bytes, v.to_be_bytes().to_vec()].concat();
-                },
+                }
                 IBField::IBInteger(v) => {
                     bytes = [bytes, v.to_be_bytes().to_vec()].concat();
-                },
+                }
                 IBField::IBString(v) => {
                     bytes = [bytes, v.as_bytes().to_vec()].concat();
                 }
@@ -284,16 +272,31 @@ impl InboundMessage {
             match field {
                 IBField::IBFloat(v) => {
                     bytes = [bytes, v.to_be_bytes().to_vec()].concat();
-                },
+                }
                 IBField::IBInteger(v) => {
                     bytes = [bytes, v.to_be_bytes().to_vec()].concat();
-                },
+                }
                 IBField::IBString(v) => {
                     bytes = [bytes, v.as_bytes().to_vec()].concat();
                 }
             }
         }
         bytes
+    }
+
+    pub fn from_bytes(b: &[u8]) -> Result<InboundMessage, Error> {
+        match b.len() > 4 {
+            true => {
+                let size = &b[0..4];
+                let msg = InboundMessage {
+                    raw: Some(String::from_utf8(b[4..].into())?),
+                    fields: vec![],
+                };
+
+                Ok(msg)
+            }
+            false => Err(anyhow!("Not enough bytes in message")),
+        }
     }
 }
 
@@ -326,6 +329,5 @@ mod tests {
         let test_bytes = test_string.as_bytes();
         let test_bytes = [&_length, test_bytes].concat();
         let test_message = InboundMessage::from_bytes(&test_bytes).unwrap();
-        
     }
 }
